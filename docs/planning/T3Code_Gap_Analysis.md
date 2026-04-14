@@ -42,7 +42,26 @@ T3 has archiving, but OMC still needs:
 - admin-state cleanup on archive where applicable
 
 ### 6. Telegram bridge
-T3 remote support is browser/app oriented. Telegram requires a separate ingress/egress bridge.
+T3 remote support is browser/app oriented. Telegram requires a separate ingress/egress bridge. MVP: all Telegram messages route to Master; Master relays downstream and returns results upstream.
+
+### 7. Notification/wakeup system
+T3 has no concept of agents notifying their parents on completion. OMC needs:
+- turn-complete event reactor that emits signal to parent thread
+- signal format: `[subagent:<threadId> completed]` (token-efficient, parent pulls details via CLI)
+- auto-drain of upstream notifications to parent
+
+### 8. Message queue
+T3 delivers messages directly. OMC needs per-thread inbox queuing:
+- queue when target is busy
+- auto-drain downstream (parent→child)
+- `--interrupt` flag to bypass queue
+- prevents message loss during concurrent agent activity
+
+### 9. Heartbeat scheduler
+T3 has no periodic wakeup mechanism. OMC needs:
+- configurable interval + injected prompt (stored in app settings)
+- fires while app is running; stops on explicit quit
+- primary use: Master periodic check-in
 
 ## Likely implementation surfaces once code is imported
 - contracts for orchestration/thread metadata

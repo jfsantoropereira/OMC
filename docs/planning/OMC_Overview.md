@@ -27,11 +27,20 @@ T3 Code already provides strong primitives for:
 
 OMC should therefore extend that orchestration model, not replace it wholesale.
 
+OMC adds three systems T3 does not have:
+- **Notification/wakeup system**: subagent turn-complete events route to invoking parent as signal-only messages; parent auto-wakes
+- **Message queue**: per-thread inbox; messages queue when agent is busy; `--interrupt` flag bypasses queue; auto-drain downstream
+- **Heartbeat scheduler**: configurable periodic wakeup with injected prompt (e.g. "check on things"), interval set in app settings
+
 ## Proposed Control Model
 1. **Master Agent**
    - global control plane
+   - lives in a hidden "OMC Control" project with `workspaceRoot: ~` (user home directory)
+   - can access any project, any file on the machine
    - can create, message, interrupt, archive, and inspect downstream agents
    - can operate across projects
+   - reactive: woken by subagent completion signals and configurable heartbeat pulses
+   - not always running, but always watching — event-driven wakeup, not persistent process
 2. **Admin Agents**
    - normal project agents with elevated authority inside a project
    - there can be multiple Admin Agents per project
@@ -58,12 +67,16 @@ That implies:
 
 ## MVP Scope
 ### In scope
-- Master agent UX + orchestration primitives
-- Hatch / Sub-Agent CLI
+- Master agent UX + orchestration primitives (hidden control project, root-scoped)
+- Hatch CLI — system-wide binary, token-efficient, `-help` on all commands
 - Admin designation and admin management
-- Telegram ingress/egress
+- Notification/wakeup system (subagent completion → parent signal)
+- Message queue per thread (auto-drain downstream, interrupt flag)
+- Heartbeat scheduler (configurable in app settings)
+- Telegram ingress/egress (Master only for MVP, Master relays)
 - archive hook that produces `thread_resume.md`
-- notes-backed project memory adapter
+- notes-backed project memory adapter (write restricted to Master/Admin by convention)
+- provider-agnostic spawning (`--model provider/version` flag)
 
 ### Out of scope for v0
 - WhatsApp integration

@@ -71,14 +71,26 @@ To support the UI cleanly, the frontend will likely need:
 - a clean selector for the current master thread ref/shell
 
 ## Navigation Recommendation
-For MVP, the easiest approach is likely:
-- store Master as a special thread in a hidden or control-oriented project
-- render it separately in the sidebar above Projects
-- avoid exposing the control project as a normal project entry
+- Master lives in a hidden "OMC Control" project with `workspaceRoot: ~` (user home directory)
+- rendered separately in sidebar above Projects
+- the control project is **not** exposed as a normal project entry
+- Master is a normal chat thread — no distinct dashboard view
+- agent status views (running, waiting, archived) live in `hatch` CLI, not in UI
+
+## App Lifecycle
+- app stays active even when screen is locked (standard macOS behavior)
+- app only stops when user explicitly quits
+- heartbeat scheduler only fires while app is running
+
+## Heartbeat Settings
+- configurable in app settings panel
+- settings: interval (e.g. every 4 hours), injected prompt text, enable/disable toggle
+- heartbeat injects a user-turn message into the Master thread on schedule
 
 ## MVP Acceptance Criteria
 - sidebar contains a `Master` section above `Projects`
 - clicking `Master Agent` opens the master thread
+- Master project does not appear in the normal Projects list
 - Admin Agent thread titles render bold in the sidebar
 - multiple Admin threads can appear bold in one project
 - existing thread navigation and archive behavior continue to work

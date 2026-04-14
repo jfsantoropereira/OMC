@@ -11,6 +11,13 @@ It is not just a thread utility. It is the policy-aware command surface for:
 - lifecycle control
 - auditability
 
+## CLI Design Principles
+- **System-wide binary on PATH** — available to all agents and processes, like the `notes` CLI.
+- **Token-efficient output** — terse, structured output. No verbose banners, decorations, or redundant labels. Every byte of output costs tokens in the invoking agent's context.
+- **`-help` on every command** — self-documenting so agents can discover usage without external docs.
+- **Compact formats** — prefer single-line-per-entity, tab-separated or minimal whitespace. Pagination and filtering flags where output could grow large.
+- **Exit codes** — `0` success, `1` error, `2` permission denied. Stderr for errors, stdout for data.
+
 ## Core Roles
 
 ### Master Agent
@@ -81,11 +88,12 @@ Admin should **not** be stored as a permanent thread kind.
 - `hatch agents show <threadId>`
 - `hatch message send`
 - `hatch request spawn`
-- `hatch spawn create`
+- `hatch spawn create --model <provider/version>` (e.g. `--model claude/latest`, `--model codex/gpt-5.4-high`)
 - `hatch spawn continue`
 - `hatch admin list`
 - `hatch admin grant`
 - `hatch admin revoke`
+- `hatch message send <threadId> [--interrupt] "message"` — queue message; `--interrupt` bypasses queue and forces immediate delivery
 - `hatch interrupt <threadId>`
 - `hatch archive <threadId>`
 - `hatch unarchive <threadId>`
@@ -96,6 +104,21 @@ Admin should **not** be stored as a permanent thread kind.
 - `hatch self request-admin-help`
 - `hatch self request-spawn`
 
+## Message Queue Behavior
+- every thread has an **inbox queue** for incoming messages from other agents
+- if target thread is idle: message delivered immediately (injected as a user-turn, same as T3 native messaging)
+- if target thread is busy (active provider session): message queued
+- **`--interrupt` flag**: bypasses queue, interrupts current generation, delivers immediately
+- **auto-drain**: queued messages auto-drain when flowing **downstream** in the hierarchy (Master→Admin, Admin→Worker)
+- **upstream notifications** (subagent completion → parent): also auto-drain, since this is the wakeup mechanism
+
+## Notification Signal Format
+When a subagent completes a turn, its parent receives a **signal-only** notification:
+```
+[subagent:<threadId> completed]
+```
+Parent uses `hatch agents show <threadId>` to pull details if needed. This keeps notification token cost minimal.
+
 ## Final MVP Policy Recommendation
 - only Master and Admin can spawn
 - only Master can grant/revoke Admin
@@ -103,3 +126,4 @@ Admin should **not** be stored as a permanent thread kind.
 - Regular agents can request, message, inspect, and self-manage, but not expand hierarchy directly
 - archiving an Admin automatically removes it from the project admin set
 - unarchive does not restore Admin automatically
+- notes CLI write access: Master and Admin only (convention-enforced via system prompt, not CLI-level restriction)

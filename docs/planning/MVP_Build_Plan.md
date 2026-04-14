@@ -6,6 +6,14 @@
 - keep the T3 orchestration/event model intact
 - add OMC-specific contracts instead of forking core semantics unnecessarily
 - inherit: Bun, Effect-TS, Turborepo, React+Vite, SQLite event store, Electron packaging
+- **identity rebrand (first commit after fork)** — required for safe coexistence with a daily-driver T3 Code install:
+  - Electron bundle ID: `com.t3.code` → `com.omc.app`
+  - app display name: `T3 Code` → `OMC`
+  - data directory: `~/Library/Application Support/t3code/` → `~/Library/Application Support/omc/`
+  - SQLite path: follows new data directory
+  - WebSocket server port: change default to avoid collision
+  - CLI entry point: `t3` → `omc`
+- this ensures both apps run side-by-side with fully isolated state
 
 ## Phase 1 — Agent Graph + Message Queue
 - add thread metadata for:

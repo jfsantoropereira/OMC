@@ -297,31 +297,63 @@ Rules:
 - Keep adapter configs explicit and local/user-controlled.
 - If an adapter requires a binary, detect it and fail with a clear setup error.
 
-## 9. T3 Code Dual-Install Collision Check
+## 9. OMC Rebrand / Package Identity
+
+OMC must be rebranded before any local app install or packaged `.app` use. The goal is coexistence with the existing T3 Code Alpha install, not cosmetic renaming.
+
+Target identity:
+
+- product/app name: `OMC`
+- macOS app: `OMC.app`
+- bundle/app id: `com.jfsantoropereira.omc`
+- default app/user data: `~/Library/Application Support/omc`
+- default OMC home: `~/.omc`
+- dev home: `/Users/joaofelipe/Desktop/OMC/.omc-home`
+- default backend port: `13783`, not `3773`
+- CLI binary: `ospawn`, not global `t3`
+- updater/cache ids: OMC-specific, not `com.t3tools.t3code` or `t3-code-desktop-updater`
+
+Collision targets to avoid:
+
+- `/Applications/T3 Code (Alpha).app`
+- `com.t3tools.t3code`
+- `~/Library/Application Support/t3code`
+- `~/.t3`
+- `127.0.0.1:3773`
+- global/package-manager `t3` bin names
+
+Detailed plan: `docs/planning/2026-04-28-omc-rebrand-collision-plan.md`.
+
+## 10. T3 Code Dual-Install Collision Check
 
 Status: risky unless isolated. João already has `/Applications/T3 Code (Alpha).app` running on `127.0.0.1:3773` with default app identity `com.t3tools.t3code`, user data under `~/Library/Application Support/t3code`, and T3 data under `~/.t3`. Upstream `pingdotgg/t3code` uses the same product name, bundle id, default port `3773`, default `~/.t3` home, and `t3` CLI package/bin names.
 
 Before running or installing T3 Code for OMC:
 
 - do not overwrite `/Applications/T3 Code (Alpha).app`;
-- set an OMC-specific `T3CODE_HOME`, e.g. `/Users/joaofelipe/Desktop/OMC/.omc-t3-home`;
-- set a non-default port, not `3773`;
+- set an OMC-specific `OMC_HOME`, e.g. `/Users/joaofelipe/Desktop/OMC/.omc-home`;
+- set a non-default `OMC_PORT`, not `3773`;
 - avoid global `t3` CLI install/link;
 - unset inherited `T3CODE_PROJECT_ROOT` unless intentional;
 - rename product/app id/userData/updater identifiers before installing an OMC desktop build.
 
-## 10. MVP Build Plan
+## 11. MVP Build Plan
 
-### Phase 0 — Foundation and Isolation
+### Phase 0 — Foundation and Rebrand Isolation
 
 - choose fork/import strategy for `pingdotgg/t3code`;
-- isolate OMC identity from T3 Code Alpha;
+- rebrand package/app identity to OMC before installing packaged builds;
+- change default home/data paths from T3 defaults to OMC defaults;
+- change default ports from T3 defaults to OMC defaults;
+- change CLI/bin surfaces from `t3` to `ospawn` where OMC-specific;
 - verify install/dev/build/Electron packaging in isolation;
 - document exact commands and blockers.
 
 Exit criteria:
 
+- packaged app is `OMC.app` with bundle id `com.jfsantoropereira.omc`;
 - OMC can be developed/run without touching the existing T3 Code Alpha app/data/port;
+- OMC defaults do not write `~/.t3` or bind `3773`;
 - repo layout is clear;
 - no external agent backend has been vendored into OMC.
 

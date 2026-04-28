@@ -137,6 +137,23 @@ Hermes may be one external controller/backend, but OMC should be equally capable
 - global CLI installs without explicit opt-in;
 - dashboard/registry UI before thread-native UX works.
 
+## OMC Rebrand / Package Identity
+
+Before any local app install or packaged `.app` use, OMC must be rebranded away from T3 Code Alpha identity.
+
+Target identity:
+
+- product/app name: `OMC`
+- macOS app: `OMC.app`
+- bundle/app id: `com.jfsantoropereira.omc`
+- default app/user data: `~/Library/Application Support/omc`
+- default OMC home: `~/.omc`
+- dev home: `/Users/joaofelipe/Desktop/OMC/.omc-home`
+- default backend port: `13783`, not `3773`
+- CLI binary: `ospawn`, not global `t3`
+
+Detailed plan: `docs/planning/2026-04-28-omc-rebrand-collision-plan.md`.
+
 ## T3 Code Dual-Install Collision Check
 
 Status: risky unless isolated. João already has `/Applications/T3 Code (Alpha).app` running on `127.0.0.1:3773` with default app identity `com.t3tools.t3code`, user data under `~/Library/Application Support/t3code`, and T3 data under `~/.t3`. Upstream `pingdotgg/t3code` uses the same product name, bundle id, default port `3773`, default `~/.t3` home, and `t3` CLI package/bin names.
@@ -144,8 +161,8 @@ Status: risky unless isolated. João already has `/Applications/T3 Code (Alpha).
 Before running or installing T3 Code for OMC:
 
 - do not overwrite `/Applications/T3 Code (Alpha).app`;
-- set an OMC-specific `T3CODE_HOME`, e.g. `/Users/joaofelipe/Desktop/OMC/.omc-t3-home`;
-- set a non-default port, not `3773`;
+- set an OMC-specific `OMC_HOME`, e.g. `/Users/joaofelipe/Desktop/OMC/.omc-home`;
+- set a non-default `OMC_PORT`, not `3773`;
 - avoid global `t3` CLI install/link;
 - unset inherited `T3CODE_PROJECT_ROOT` unless intentional;
 - if building an OMC desktop app, rename product/app id/userData/updater identifiers before install.
@@ -153,8 +170,8 @@ Before running or installing T3 Code for OMC:
 ## Current Build Order
 
 1. Confirm fork/derivative strategy for `pingdotgg/t3code`.
-2. Clone/import the T3 Code base without colliding with the existing T3 Code Alpha install.
-3. Rename/isolate OMC app identity, data dir, port, and package/bin names.
+2. Execute rebrand/collision plan before packaged app install: `OMC.app`, `com.jfsantoropereira.omc`, `~/.omc`, `OMC_HOME`, `OMC_PORT=13783`, `ospawn`.
+3. Clone/import the T3 Code base without colliding with the existing T3 Code Alpha install.
 4. Verify install/dev/build/Electron packaging in isolation.
 5. Map existing T3 project/thread/session internals.
 6. Design the external CLI-agent adapter contract.
@@ -176,6 +193,6 @@ Historical planning notes are under `docs/planning/` and are not current source 
 Execute Phase 0 from `/Users/joaofelipe/Desktop/OMC`:
 
 - choose fork/import strategy for `pingdotgg/t3code`;
-- isolate app identity and runtime paths before running anything;
-- verify dev/build/Electron packaging;
+- implement the OMC rebrand/collision plan before packaged app install;
+- verify dev/build/Electron packaging with `OMC_HOME` and `OMC_PORT` isolation;
 - document exact commands and blockers before implementing the agent adapter/spawn surface.

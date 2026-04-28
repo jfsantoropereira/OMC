@@ -1,3 +1,14 @@
+Status: superseded by canonical OMC docs.
+
+Canonical docs:
+
+- [../../README.md](../../README.md)
+- [../../SystemOutline.md](../../SystemOutline.md)
+
+This file is historical context only. Do not treat it as current architecture or build plan. Current architecture: Hermes is the external master/operator; OMC is a thin T3 Code thread substrate; `hatch` is the programmatic T3 control surface; no in-app Master Agent; no Admin Agent role; minimal/no UI changes for MVP.
+
+---
+
 # OMC MVP Build Plan
 
 ## Phase 0 — Foundation

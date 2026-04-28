@@ -1,54 +1,175 @@
-# OMC
+# OMC — One Man Company
 
-One Man Company: a planned agent orchestration system built on top of T3 Code concepts, centered on a global Master Agent, project-scoped Admin Agents, and controlled worker spawning.
+Status: canonical entrypoint. Supersedes the scattered OMC planning notes.
 
-## Core Services
+Repository: https://github.com/jfsantoropereira/OMC.git
+Local path: `/Users/joaofelipe/Desktop/OMC`
 
-| Service | Entry Point | Dev Port | Docker Port |
-|---|---|---:|---:|
-| _None scaffolded yet_ | — | — | — |
 
-## Quick Start
+## Status
+
+Accepted architecture:
+
+- OMC is a thin T3 Code thread substrate controlled by Hermes through `hatch`.
+- Hermes is the external master/operator interface.
+- OMC does not implement an in-app Master Agent.
+- OMC does not implement Admin Agent roles for MVP.
+- OMC should stay close to normal T3 Code usage: projects, threads, messages, configuration, lifecycle, archive/resume.
+- CLI/API first. UI changes only after the thread substrate is proven useful.
+
+## Goal
+
+Build OMC as programmable T3 Code usage for Hermes.
+
+The useful primitive is not an agent hierarchy. The useful primitive is reliable control over persistent T3-backed work threads:
+
+- create threads;
+- message existing threads;
+- configure model/runtime/worktree;
+- list/show project and thread state;
+- interrupt/stop/archive/unarchive threads;
+- produce or fetch resume artifacts.
+
+## Core Thesis
+
+Do not build an agent org chart before the thread-control substrate exists.
+
+T3 Code already has much of the substrate: projects, threads, turns, sessions, archive state, interruption, and worktree/bootstrap foundations. OMC should expose those primitives cleanly to Hermes instead of inventing Master/Admin roles inside the app.
+
+## Control Model
+
+### Hermes
+
+Hermes is the master/operator layer.
+
+Responsibilities:
+
+- decide whether to answer directly, use native `delegate_task`, or operate a persistent OMC/T3 thread through `hatch`;
+- hold global memory/context through tools and notes;
+- route Telegram or other remote interfaces into the operator loop;
+- call `hatch` as the local control surface for OMC/T3.
+
+Hermes should not be reimplemented inside T3 as a special Master Agent thread.
+
+### OMC/T3 Threads
+
+OMC threads are normal T3 Code threads used as persistent agent/session units.
+
+Responsibilities:
+
+- retain visible history;
+- run inside project/worktree context;
+- be interruptible, stoppable, archivable, resumable;
+- stay inspectable through T3 UI and `hatch`.
+
+MVP threads do not need special Master/Admin/Regular roles.
+
+### hatch CLI
+
+`hatch` is the programmatic T3 operator surface used by Hermes.
+
+It should expose T3-like operations:
+
+- `hatch projects list/show`
+- `hatch threads list/show/tree`
+- `hatch threads create`
+- `hatch threads message`
+- `hatch threads configure`
+- `hatch threads interrupt`
+- `hatch threads stop`
+- `hatch threads archive/unarchive`
+- `hatch threads resume`
+
+All operational commands should support compact `--json` output.
+
+## Delegation Substrate Split
+
+### Use Hermes `delegate_task` for
+
+- one-shot research;
+- codebase inspection;
+- independent review/synthesis;
+- clean-context ephemeral work;
+- tasks where a final summary is enough.
+
+### Use OMC/`hatch` threads for
+
+- persistent T3-visible sessions;
+- long-running coding/project/worktree tasks;
+- tasks needing resume, archive, interrupt, or follow-up;
+- workflows where visible lifecycle state matters.
+
+These are complementary substrates, not replacements for each other.
+
+## MVP Scope
+
+### In scope
+
+1. Fork/clone and verify `pingdotgg/t3code` locally.
+2. Verify install/dev/build/Electron packaging.
+3. Map existing T3 project/thread commands, events, and APIs.
+4. Implement `hatch` read-only inspection.
+5. Implement thread create/message/configure.
+6. Implement lifecycle controls: interrupt, stop, archive, unarchive.
+7. Implement or fetch resume artifacts.
+8. Route Telegram through Hermes later, not directly into OMC/T3.
+
+### Out of scope
+
+- in-app Master Agent;
+- Admin Agent role;
+- role-based permissions;
+- Master/Admin UI;
+- hidden `OMC Control` project;
+- direct Telegram-to-OMC control;
+- WhatsApp integration;
+- custom vector database;
+- complex remote/multi-tenant auth;
+- dashboard/registry UI before the CLI works.
+
+
+## Repository Setup
 
 ```bash
-git clone https://github.com/jfsantoropereira/OMC.git
-cd OMC
+cd /Users/joaofelipe/Desktop/OMC
+git remote -v
 git status --short --branch
 ```
 
-Then read, in order:
-1. [AGENTS.md](AGENTS.md)
-2. [SystemOutline.md](SystemOutline.md)
-3. [docs/README.md](docs/README.md)
-4. the relevant planning docs under [`docs/planning/`](docs/planning/)
+Remote:
 
-## Documentation
+```text
+origin  https://github.com/jfsantoropereira/OMC.git
+```
 
-### Top-level Docs
+This repo is currently documentation/bootstrap only. No T3 Code source or runnable OMC services are committed yet.
 
-| Document | Path | Purpose |
-|---|---|---|
-| Agent operating protocol | [AGENTS.md](AGENTS.md) | Rules and workflow for agents working in this repo |
-| System reference | [SystemOutline.md](SystemOutline.md) | Canonical system-wide technical documentation |
-| Docs index | [docs/README.md](docs/README.md) | Index of planning and supporting docs |
-| OMC overview | [docs/planning/OMC_Overview.md](docs/planning/OMC_Overview.md) | Product concept and control model |
-| Hatch CLI plan | [docs/planning/Hatch_CLI.md](docs/planning/Hatch_CLI.md) | CLI design and authorization plan |
-| MVP build plan | [docs/planning/MVP_Build_Plan.md](docs/planning/MVP_Build_Plan.md) | Sequenced implementation plan |
-| UI changes plan | [docs/planning/UI_Changes_Plan.md](docs/planning/UI_Changes_Plan.md) | Master/Admin sidebar and UI planning |
-| T3Code gap analysis | [docs/planning/T3Code_Gap_Analysis.md](docs/planning/T3Code_Gap_Analysis.md) | Upstream research and required extension points |
+## Current Build Order
 
-### Component READMEs
+1. Choose local repo path.
+2. Fork/clone `pingdotgg/t3code`.
+3. Install dependencies.
+4. Verify dev/build/Electron packaging.
+5. Document exact commands and repo layout.
+6. Map T3 thread/project internals.
+7. Build `hatch` read-only commands.
+8. Add create/message/configure.
+9. Add lifecycle commands.
+10. Add resume artifacts.
+11. Test side-by-side against Hermes `delegate_task`.
 
-| Component | README |
-|---|---|
-| _None yet_ | No implementation components have been scaffolded yet. |
+## Canonical Docs
 
-## Repository Status
+- `README.md` — short project entrypoint and execution orientation.
+- `SystemOutline.md` — detailed architecture, command surface, build plan, and superseded concepts.
 
-This repository is currently in a **documentation-first bootstrap state**:
-- git repository initialized
-- planning docs materialized into the repo
-- no application code committed yet
-- no deployment or runtime configuration committed yet
+Historical planning notes are under `docs/planning/` and are not current source of truth.
 
-Implementation work should begin by scaffolding the first real components, then creating per-component READMEs as those components appear.
+## Next Action
+
+Execute Phase 0 from `/Users/joaofelipe/Desktop/OMC`:
+
+- decide whether `pingdotgg/t3code` should be forked into this repo, vendored as a subtree/submodule, or cloned as an adjacent upstream reference;
+- install dependencies for the chosen T3 Code working copy;
+- verify dev server/build/Electron packaging;
+- document exact commands and blockers before starting `hatch` implementation.

@@ -8,7 +8,7 @@
   1. `README.md`
   2. `AGENTS.md`
   3. `SystemOutline.md`
-  4. the relevant file(s) under `docs/planning/`
+  4. historical notes under `docs/planning/` only if needed for context
 - Basic repo commands:
   - `git status --short --branch`
   - `find . -maxdepth 3 -type f | sort`
@@ -131,15 +131,14 @@
 
 | Status | Item | Relevant READMEs |
 |---|---|---|
-| In Progress | Documentation-first repository bootstrap and planning materialization | `README.md`, `SystemOutline.md`, `docs/README.md` |
+| In Progress | Phase 0 foundation: verify repo state, then clone/fork and validate T3 Code substrate decisions | `README.md`, `SystemOutline.md` |
 | Remaining | Scaffold the first implementation components and create per-component READMEs as soon as code exists | `SystemOutline.md` |
-| Remaining | Convert planning docs into implementation docs as OMC services are built | `docs/planning/*.md` |
+| Remaining | Keep historical planning docs superseded unless useful facts are merged into canonical docs | `docs/planning/*.md` |
 
 ## Critical Gotchas
 - This repo currently has **no implementation components**; do not assume services exist.
 - `docs/planning/` contains roadmap/design material; it is not proof that behavior is shipped.
-- OMC role semantics currently assume: Master is global, Admin is project-scoped, Regular cannot spawn.
-- Admin Agents may archive only **non-admin** agents in their own project.
-- Master Agent UI is intended to live above Projects in the sidebar; do not bury it in a normal project list.
+- Canonical architecture is Hermes external master + OMC/T3 thread substrate + `hatch`; no in-app Master Agent or Admin Agent roles for MVP.
+- `docs/planning/` is historical/superseded unless canonical docs explicitly revive a detail.
 - When real code lands, update `SystemOutline.md` before or alongside structural changes.
 - Keep top-level docs limited to onboarding/control docs; place detailed design docs under `docs/`.

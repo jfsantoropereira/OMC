@@ -1,325 +1,416 @@
-# OMC System Documentation
+# OMC System Outline
 
-> Comprehensive Technical Reference | Last Updated: 2026-04-14
-> For AI agent guidance, see [AGENTS.md](AGENTS.md).
+Status: canonical system/design outline. Supersedes the prior OMC planning notes unless a note is explicitly kept as historical research.
 
-## Table of Contents
-1. [Component README Index](#component-readme-index)
-2. [Executive Summary](#1-executive-summary)
-3. [Architecture Overview](#2-architecture-overview)
-4. [Database Schema](#3-database-schema)
-5. [Services Reference](#4-services-reference)
-6. [API Reference](#5-api-reference)
-7. [Configuration](#6-configuration)
-8. [Operations](#7-operations)
-9. [Migration & Deployment](#8-migration--deployment)
-10. [Development Guide](#9-development-guide)
-11. [Appendices](#appendices)
+Repository: https://github.com/jfsantoropereira/OMC.git
+Local path: `/Users/joaofelipe/Desktop/OMC`
 
-## Component README Index
+## 1. Accepted Architecture
 
-| Component | README Path | Description |
-|---|---|---|
-| _None yet_ | — | No service, library, module, or script components have been scaffolded in this repository yet. |
+OMC is a thin T3 Code thread substrate controlled by Hermes through `hatch`.
 
-## 1. Executive Summary
+Accepted decisions:
 
-OMC (One Man Company) is a planned agent orchestration system intended to be built on top of the architectural foundation provided by T3 Code. The current repository state is **documentation-first**: it contains planning, operating, and system reference documents, but no implementation services, libraries, migrations, or deployment assets yet.
+- Hermes is the external master/operator.
+- OMC/T3 provides persistent projects, threads, sessions, events, lifecycle state, and visible history.
+- `hatch` is the programmatic control surface Hermes uses to inspect and operate T3/OMC.
+- No in-app Master Agent for MVP.
+- No Admin Agent role for MVP.
+- No Master/Admin/Regular role hierarchy for MVP.
+- No meaningful UI work before the CLI substrate works.
 
-The core intended product model is:
-- a global **Master Agent**
-- project-scoped **Admin Agents**
-- **Regular Agents** with restricted privileges
-- spawned **Worker Agents** for bounded tasks
-- long-term memory integration through notes/embedding workflows
-- remote control beginning with Telegram
+## 2. Design Principles
 
-### Current state
-- Git repository initialized
-- top-level operating and system docs present
-- planning material materialized under `docs/planning/`
-- no application code committed yet
-- no environment variables, schemas, endpoints, or deployment configuration committed yet
+- T3-native semantics first.
+- Threads over roles.
+- CLI/API before UI.
+- Local-first trusted Hermes operator.
+- Minimal metadata.
+- Compact JSON output for machine control.
+- Add auth, policy, UI, and hierarchy only if real usage creates pressure.
+- Do not duplicate Hermes inside OMC.
 
-### Planned operating model (high level)
-```text
-User / Telegram / UI
-        |
-        v
-   Master Agent
-        |
-        +----------------------+----------------------+
-        |                      |                      |
-        v                      v                      v
-   Project A Admins       Project B Admins      Project C Admins
-        |                      |                      |
-        v                      v                      v
-  Regular / Worker agents Regular / Worker agents Regular / Worker agents
+## 3. System Components
+
+### 3.1 Hermes
+
+Hermes owns high-level operation.
+
+Responsibilities:
+
+- user/operator interface;
+- global reasoning and planning;
+- memory and notes access;
+- Telegram/remote routing;
+- choosing direct answer vs native `delegate_task` vs persistent OMC thread;
+- calling `hatch` to operate OMC/T3.
+
+Non-responsibilities:
+
+- Hermes should not be embedded inside T3 as a special Master thread.
+- Hermes should not require OMC to implement an agent org chart.
+
+### 3.2 OMC/T3
+
+OMC/T3 owns persistent execution substrate.
+
+Responsibilities:
+
+- projects;
+- threads;
+- provider sessions;
+- worktrees/bootstrap;
+- event/state model;
+- visible message history;
+- archive/unarchive;
+- interrupt/stop;
+- resume/handoff artifacts where possible.
+
+Non-responsibilities:
+
+- not a master/admin hierarchy;
+- not the final orchestrator;
+- not Telegram-first UX;
+- not a new custom agent runtime if T3 primitives already suffice.
+
+### 3.3 hatch
+
+`hatch` is the narrow programmatic interface between Hermes and OMC/T3.
+
+Responsibilities:
+
+- expose project/thread operations;
+- produce stable compact JSON;
+- let Hermes inspect and mutate OMC/T3 state;
+- stay close to T3 vocabulary.
+
+Non-responsibilities:
+
+- not a policy engine in MVP;
+- not a role/permission framework in MVP;
+- not a separate agent runtime.
+
+## 4. Existing T3 Capabilities to Reuse
+
+From prior T3 research, preserve these as likely useful substrate facts to verify during Phase 0/1:
+
+- event-sourced project/thread orchestration;
+- `thread.create`;
+- `thread.archive` and `thread.unarchive`;
+- `thread.turn.start`;
+- `thread.turn.interrupt`;
+- `thread.session.stop`;
+- `thread.meta.update`;
+- bootstrap/worktree/setup support;
+- remote access foundations;
+- archive UI;
+- compaction/activity signals.
+
+These are substrate facts, not a mandate to preserve old Master/Admin recommendations.
+
+## 5. Minimal OMC Additions
+
+### Required
+
+- `hatch` CLI.
+- Read-only project/thread inspection.
+- Thread create/message/configure.
+- Lifecycle commands.
+- Resume artifact command or hook.
+
+### Optional neutral metadata
+
+Only add if it is cheap and directly useful:
+
+- `parentThreadId`;
+- `rootThreadId`;
+- `spawnPurpose`;
+- `createdBy: hermes | user | thread:<id>`.
+
+### Explicitly not required
+
+- `agentKind`;
+- `adminThreadIds`;
+- `ownerThreadId` for role hierarchy;
+- pinned project master;
+- role-based spawn permissions;
+- grant/revoke admin flows.
+
+## 6. hatch Command Surface
+
+Canonical namespace: `threads`.
+
+Optional compatibility alias: `spawn`, but docs and implementation should prefer `threads` because this is programmatic T3 usage, not an agent hierarchy.
+
+### 6.1 Context
+
+```bash
+hatch context --json
+hatch whoami --json
 ```
 
-The canonical current planning sources are:
-- [docs/planning/OMC_Overview.md](docs/planning/OMC_Overview.md)
-- [docs/planning/Hatch_CLI.md](docs/planning/Hatch_CLI.md)
-- [docs/planning/MVP_Build_Plan.md](docs/planning/MVP_Build_Plan.md)
-- [docs/planning/UI_Changes_Plan.md](docs/planning/UI_Changes_Plan.md)
-- [docs/planning/T3Code_Gap_Analysis.md](docs/planning/T3Code_Gap_Analysis.md)
+### 6.2 Projects
 
-## 2. Architecture Overview
-
-### High-level system diagram
-
-#### Current repository state
-```text
-OMC repo
-├── AGENTS.md
-├── README.md
-├── SystemOutline.md
-└── docs/
-    ├── README.md
-    └── planning/
-        ├── OMC_Overview.md
-        ├── Hatch_CLI.md
-        ├── MVP_Build_Plan.md
-        ├── UI_Changes_Plan.md
-        └── T3Code_Gap_Analysis.md
+```bash
+hatch projects list --json
+hatch projects show <project-id> --json
 ```
 
-#### Planned runtime architecture
-```text
-┌──────────────────────────────────────────────┐
-│ Client Surfaces                              │
-│ - Web UI                                     │
-│ - Telegram bridge                            │
-│ - Hatch CLI                                  │
-└───────────────────────┬──────────────────────┘
-                        │
-                        v
-┌──────────────────────────────────────────────┐
-│ OMC Control Plane                            │
-│ - Master Agent                               │
-│ - authorization / role rules                 │
-│ - project admin designations                 │
-│ - agent registry                             │
-└───────────────────────┬──────────────────────┘
-                        │
-                        v
-┌──────────────────────────────────────────────┐
-│ T3-derived orchestration/runtime layer       │
-│ - projects / threads / sessions              │
-│ - provider orchestration                     │
-│ - worktree / git flows                       │
-│ - archival / handoff generation              │
-└───────────────────────┬──────────────────────┘
-                        │
-                        v
-┌──────────────────────────────────────────────┐
-│ Memory + Persistence                         │
-│ - orchestration event store                  │
-│ - projection state                           │
-│ - notes-backed project memory                │
-│ - master memory index / embeddings           │
-└──────────────────────────────────────────────┘
+### 6.3 Threads: Read
+
+```bash
+hatch threads list --project <project-id> --state <state> --json
+hatch threads show <thread-id> --json
+hatch threads tree --project <project-id> --json
 ```
 
-### Services overview table
+`tree` is optional. Do not implement hierarchy UI before basic thread operations work.
 
-| Service | Entry Point | Port | Purpose |
-|---|---|---:|---|
-| _None scaffolded yet_ | — | — | The repository is currently in documentation/planning state only. |
+### 6.4 Threads: Create / Message / Configure
 
-### Technology stack table
+```bash
+hatch threads create   --project <project-id>   --title "..."   --prompt-file task.md   --model <provider/model>   --json
 
-| Layer | Current State | Planned Direction |
-|---|---|---|
-| Repository | Git + Markdown docs | Git monorepo based on or derived from T3 Code |
-| UI | None committed yet | React / T3 Code sidebar and chat surfaces |
-| Backend | None committed yet | TypeScript / Node or Bun, reusing T3 orchestration patterns |
-| Persistence | None committed yet | SQLite event store + projections + notes-backed memory |
-| Integrations | None committed yet | Telegram first, WhatsApp later |
-| Agent control | Planning only | Hatch CLI + Master/Admin/Regular policy model |
+hatch threads message <thread-id> --text "..." --json
+hatch threads message <thread-id> --prompt-file followup.md --json
 
-### Directory structure (annotated tree)
-
-```text
-.
-├── AGENTS.md                     # Agent operating protocol for this repo
-├── README.md                     # Root onboarding and doc index
-├── SystemOutline.md              # Canonical system reference
-└── docs/
-    ├── README.md                 # Documentation directory index
-    └── planning/
-        ├── OMC_Overview.md       # Product and control model summary
-        ├── Hatch_CLI.md          # CLI interaction and authorization plan
-        ├── MVP_Build_Plan.md     # Implementation sequence and phases
-        ├── UI_Changes_Plan.md    # Sidebar/UI behavior plan
-        └── T3Code_Gap_Analysis.md# Upstream research and gap analysis
+hatch threads configure <thread-id>   --model <provider/model>   --worktree <strategy>   --json
 ```
 
-## 3. Database Schema
+### 6.5 Threads: Lifecycle
 
-### Current state
-No database schema, migrations, ORM models, or SQL files are committed in this repository yet.
+```bash
+hatch threads interrupt <thread-id> --json
+hatch threads stop <thread-id> --json
+hatch threads archive <thread-id> --reason "done" --json
+hatch threads unarchive <thread-id> --json
+hatch threads resume <thread-id> --json
+```
 
-### Planned connection architecture
-Expected future architecture, based on current planning:
-- orchestration event store for projects, threads, and lifecycle events
-- projection tables for efficient UI queries
-- project-level admin designation state
-- memory artifact storage and embedding/index references
-- notes-backed memory materialization layer for project and master memory
+### 6.6 JSON Envelope
 
-### Planned logical entities (non-implemented)
+Target shape:
 
-| Entity | Planned Purpose |
-|---|---|
-| Project | Container for project-scoped agents and admin designations |
-| Thread / Agent | Unit of conversation, control, and execution |
-| Admin designation | Project-level membership indicating elevated privileges |
-| Spawn relation | Parent/child link between agents |
-| Memory artifact | Handoff, resume, or embedded long-term memory document |
-| Archive artifact | Generated `thread_resume.md` and related summaries |
+```json
+{
+  "ok": true,
+  "actor": "hermes-local",
+  "result": {
+    "threadId": "thr_123",
+    "projectId": "proj_abc",
+    "state": "running"
+  }
+}
+```
 
-### Tables, indexes, views
-Current state: none committed.
+On failure:
 
-When schema work begins, this section becomes the canonical place for:
-- table definitions
-- column descriptions
-- indexes
-- views
-- relationships
-- service ownership of schema surfaces
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "thread_not_found",
+    "message": "No thread found for id thr_123"
+  }
+}
+```
 
-## 4. Services Reference
+## 7. Archive and Resume
 
-No implementation services are committed yet.
+A resume artifact should let Hermes or a human restart context without scraping an entire thread.
 
-When services are added, each subsection in this section must include:
-- location
-- entry point
-- purpose
-- short workflow summary
-- a cross-reference in the form:
+Suggested `thread_resume.md` fields:
 
-> Future service sections should begin with a relative link to that component README; for example, a service section may open with a sentence pointing readers to `apps/web/README.md`.
+- goal;
+- current status;
+- relevant decisions;
+- important messages or links;
+- files changed/artifacts created;
+- tests/commands run;
+- blockers;
+- next actions.
 
-### Planned service categories
-These are roadmap categories only, not implemented services:
-- control plane / orchestration extensions
-- Hatch CLI surface
-- UI extensions for Master/Admin visibility
-- Telegram bridge
-- memory ingestion / archive summarization pipeline
+Hermes decides what to persist to notes.
 
-## 5. API Reference
+## 8. UI Stance
 
-### Current state
-No API endpoints are committed in this repository yet.
+MVP:
 
-### Planned API/interaction surfaces
-The primary planned control interfaces are:
-- Hatch CLI (see [docs/planning/Hatch_CLI.md](docs/planning/Hatch_CLI.md))
-- Web UI extensions (see [docs/planning/UI_Changes_Plan.md](docs/planning/UI_Changes_Plan.md))
-- remote message ingress through Telegram
+- no meaningful UI changes;
+- no Master tab;
+- no Master sidebar row;
+- no dashboard/registry;
+- no Admin UI;
+- no role/permission UI;
+- preserve normal T3 project/thread UX.
 
-### Response models
-None implemented yet.
+Possible later, only after CLI proves useful:
 
-When code lands, this section should hold:
-- full endpoint tables per service
-- method and path
-- request and response model summaries
-- auth requirements
-- cross-links to relevant component READMEs
+- parent/child thread display;
+- created-by-Hermes indicator;
+- resume artifact link;
+- lightweight status indicators.
 
-## 6. Configuration
+## 9. Telegram Stance
 
-### Current state
-No `.env`, `.env.example`, deployment config, or CI/CD pipeline files are committed yet.
+Telegram routes to Hermes, not directly to OMC/T3.
 
-### Environment variables
-Current state: none documented because none are implemented.
+Hermes decides whether to:
 
-### Planned configuration categories
-These are expected future buckets only:
-- runtime environment selection
-- provider/runtime auth
-- Telegram bot credentials
-- persistence paths / database settings
-- notes/memory configuration
-- observability / logging
+- answer directly;
+- use native `delegate_task`;
+- operate a persistent OMC/T3 thread via `hatch`.
 
-### Database users and permissions
-None implemented yet.
+OMC/T3 does not need a direct Telegram bridge for MVP.
 
-## 7. Operations
+## 10. Delegation Substrate Split
 
-### How to run each service
-Current state: no runnable services exist in the repo.
+### Hermes `delegate_task`
 
-### Troubleshooting guide
+Use for:
 
-| Symptom | Likely Cause | Current Resolution |
-|---|---|---|
-| Nothing to run | Repo is documentation-only so far | Read planning docs and scaffold implementation before expecting runtime commands |
-| Missing component README | Component has not been created yet, or docs were not updated | Create/update the component README alongside the component |
-| Planning doc conflicts with implementation | Plan became stale | Treat code as source of truth and update or delete the plan doc |
+- ephemeral clean-context subagents;
+- independent review;
+- codebase inspection;
+- synthesis;
+- tasks where a final summary is sufficient.
 
-### Common issues
-- confusing roadmap docs with shipped behavior
-- forgetting to update `SystemOutline.md` after structural changes
-- leaving planning docs in place after features ship without absorbing them into durable docs
+Properties:
 
-## 8. Migration & Deployment
+- isolated context;
+- no persistent T3-visible thread;
+- fast to spawn;
+- good for review and bounded implementation.
 
-### Current deployment state
-No deployment artifacts or workflows are committed yet.
+### OMC/`hatch` threads
 
-### Target deployment direction
-Planned future state includes:
-- local development environment derived from T3 Code foundations
-- possibly desktop/web UI plus remote control surfaces
-- Telegram as the first remote control ingress
-- staged progression from docs → local implementation → remote operation
+Use for:
 
-### Deployment references
-There is currently no `DEPLOY.md` in the repository.
-If deployment docs are added later, link them here and from `README.md`.
+- persistent T3-visible work;
+- project/worktree tasks;
+- sessions that need archive/resume;
+- long-running or follow-up-heavy work;
+- cases where lifecycle control matters.
 
-## 9. Development Guide
+Properties:
 
-### Local setup
-At present, setup is documentation-oriented:
-1. clone the repository
-2. read `README.md`
-3. read `AGENTS.md`
-4. read `SystemOutline.md`
-5. inspect the planning docs under `docs/planning/`
-6. scaffold the first code components before adding runtime expectations
+- visible in T3;
+- persistent history;
+- explicit lifecycle;
+- operated by Hermes through `hatch`.
 
-### Code conventions
-Current conventions available from planning:
-- separate current implementation from future design
-- prefer extending T3 orchestration patterns rather than replacing them
-- model Admin as a project-level designation, not a permanent subtype
-- preserve role policy boundaries in both UI and CLI design
+## 11. MVP Build Plan
 
-### Documentation conventions
-- root docs remain lean and onboarding-focused
-- detailed design docs live under `docs/planning/` until implemented
-- durable technical knowledge moves into component READMEs and this file once code ships
+### Phase 0 — Foundation
 
-## Appendices
+- choose local repo path;
+- fork/clone `pingdotgg/t3code`;
+- install dependencies;
+- verify dev server;
+- verify production build;
+- verify Electron packaging if supported;
+- document repo layout and exact commands.
 
-### Appendix A — Planning document reference card
+Exit criteria:
 
-| Document | Purpose |
-|---|---|
-| [docs/planning/OMC_Overview.md](docs/planning/OMC_Overview.md) | Product concept and role model |
-| [docs/planning/Hatch_CLI.md](docs/planning/Hatch_CLI.md) | CLI behavior and authorization model |
-| [docs/planning/MVP_Build_Plan.md](docs/planning/MVP_Build_Plan.md) | Build sequencing and MVP phases |
-| [docs/planning/UI_Changes_Plan.md](docs/planning/UI_Changes_Plan.md) | UI behavior and sidebar changes |
-| [docs/planning/T3Code_Gap_Analysis.md](docs/planning/T3Code_Gap_Analysis.md) | Upstream research and extension points |
+- T3 Code runs locally;
+- build/package status is known;
+- blockers are documented;
+- no OMC abstraction work starts before this is clear.
 
-### Appendix B — Upstream reference
-The current planning assumes T3 Code as the upstream implementation substrate. That dependency is architectural and documentary at this stage only; no upstream source has been committed into this repository yet.
+### Phase 1 — T3 Thread Substrate Reconnaissance
+
+- map existing project/thread APIs and event names;
+- identify where CLI can call into T3 safely;
+- verify archive/unarchive, interrupt, stop, meta update, worktree/bootstrap behavior;
+- decide whether `hatch` should call a local HTTP API, internal package, local DB, or existing CLI/server entrypoint.
+
+### Phase 2 — hatch Read-Only Skeleton
+
+Implement:
+
+- `hatch context --json`;
+- `hatch whoami --json`;
+- `hatch projects list/show --json`;
+- `hatch threads list/show --json`;
+- optional `hatch threads tree --json`.
+
+### Phase 3 — Thread Create / Message / Configure
+
+Implement:
+
+- `hatch threads create`;
+- `hatch threads message`;
+- `hatch threads configure`;
+- prompt-file support;
+- model/runtime/worktree flags where T3 supports them cleanly.
+
+### Phase 4 — Lifecycle
+
+Implement:
+
+- interrupt;
+- stop;
+- archive;
+- unarchive.
+
+### Phase 5 — Resume Artifacts
+
+Implement one of:
+
+- explicit `hatch threads resume <thread-id> --json`;
+- archive-triggered `thread_resume.md` generation;
+- fetch existing T3 summaries/metadata if available.
+
+### Phase 6 — Hermes/Telegram Routing
+
+- route Telegram into Hermes;
+- Hermes chooses direct answer, `delegate_task`, or `hatch` operation;
+- keep OMC/T3 unaware of Telegram unless later pressure proves otherwise.
+
+### Phase 7 — Optional UI Polish
+
+Only after the CLI substrate is useful:
+
+- small metadata/status display;
+- parent/child thread visibility;
+- resume artifact links.
+
+## 12. Removed / Superseded Concepts
+
+These are not part of the canonical MVP:
+
+- Master Agent inside T3;
+- hidden `OMC Control` project;
+- Master Agent tab/sidebar/dashboard;
+- Admin Agents;
+- Master/Admin/Regular hierarchy;
+- role-based spawn authorization;
+- grant/revoke admin flows;
+- project-master promotion/demotion;
+- pinned master thread;
+- Admin badges/sorting/styling;
+- UI-first control surfaces;
+- heartbeat scheduler/message queue/wakeup system as MVP scope;
+- direct Telegram-to-OMC bridge;
+- WhatsApp integration;
+- custom vector DB;
+- complex remote/multi-tenant auth before local MVP works.
+
+Historical notes may mention these concepts, but canonical planning should not depend on them.
+
+## 13. Open Questions
+
+Keep these tactical:
+
+- Exact local repo path: `/Users/joaofelipe/Desktop/OMC` vs `/Users/joaofelipe/Desktop/OMC-T3`.
+- Where should `hatch` live: inside the T3 repo, adjacent package, or external wrapper?
+- Should `hatch` call a local HTTP API, an internal package, local DB, or existing T3 internals?
+- What is the minimum resume artifact implementation?
+- Is neutral parent/root metadata needed in v0, or can it wait?
+
+## 14. Immediate Next Action
+
+Execute Phase 0.
+
+Do not start Admin/Master/UI/Telegram work before the T3 foundation and `hatch` thread substrate are proven.

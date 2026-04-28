@@ -138,7 +138,7 @@
 ## Critical Gotchas
 - This repo currently has **no implementation components**; do not assume services exist.
 - `docs/planning/` contains roadmap/design material; it is not proof that behavior is shipped.
-- Canonical architecture is Hermes external master + OMC/T3 thread substrate + `hatch`; no in-app Master Agent or Admin Agent roles for MVP.
+- Canonical architecture is OMC as a T3 Code-derived UI/runtime with agent-native spawn tools and external CLI-agent adapters; Hermes is only one possible external backend, not vendored or required.
 - `docs/planning/` is historical/superseded unless canonical docs explicitly revive a detail.
 - When real code lands, update `SystemOutline.md` before or alongside structural changes.
 - Keep top-level docs limited to onboarding/control docs; place detailed design docs under `docs/`.
